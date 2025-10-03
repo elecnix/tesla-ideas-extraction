@@ -34,8 +34,8 @@ The system must:
   - Initialize an empty list of extracted facts.
   - In a loop:
     - Send the full transcript to the LLM along with the current list of extracted facts, prompting to identify any missing facts related to Tesla operations and work environment (Agile, innovation speed, etc.).
-    - Prompt example: "Given this transcript: '[transcript]'. And this current list of facts: [list]. Extract any additional unique facts not already in the list about Tesla's work environment, including Agile at Tesla or Speed of Innovation at Tesla. Describe each fact in a single line. If no additional facts can be identified, return an empty list."
-    - LLM response: Structured output (e.g., JSON array of strings, one per new fact).
+    - Prompt example: "Given this transcript: '[transcript]'. And this current list of facts: [list]. Extract any additional unique facts not already in the list about Tesla's work environment, including Agile at Tesla or Speed of Innovation at Tesla. For each fact, provide a 2-4 sentence passage that includes context and narrative flow, suitable for book material. Include full quotes, examples, and surrounding context. If no additional facts can be identified, return an empty list."
+    - LLM response: Structured output (e.g., JSON array of objects, each with 'passage').
     - Add the new facts to the list.
     - Repeat the loop until the number of new facts added in the last iteration is 1 or fewer, or the total number of extracted facts reaches at least 15.
   - After the loop, assign each fact a UUID and store additional details like contextual details, line number, and timestamp if available.
@@ -43,33 +43,46 @@ The system must:
 - **Cost Efficiency**: Cache extracted facts per transcript (e.g., in a JSON file) to avoid reprocessing if the script restarts. Use a hash of the transcript content as a cache key.
 - **Resilience**: Implement retry logic for LLM calls (e.g., infinite retries with exponential backoff). The script should be restartable and continue from where it left off.
 - **Output**: For each transcript, the final list of unique facts with UUIDs and detailed contextual information. Each fact should be stored in a structured JSON format to support book writing and raw material extraction, including the following fields:
-  - `quote`: The original text of the fact.
+  - `one_liner`: A very short one-liner summarizing the fact concisely.
+  - `quote`: The original 2-4 sentence passage of the fact.
   - `speaker`: Speaker identification if available.
   - `timestamp`: Timestamp from subtitles or transcription sources (e.g., "HH:MM:SS"), not the current processing time.
   - `source_file`: Name of the source file.
-  - `context`: Surrounding sentences before and after the quote.
+  - `context`: Surrounding sentences before and after the quote (2-3 sentences).
   - `tags`: Automatically generated tags related to work environment, Agile principles, innovation, etc.
+  - `key_metrics`: Numbers or data points mentioned (e.g., "cycle time").
+  - `themes`: Auto-tagged categories like "leadership," "failure lessons," "scaling Agile."
+  - `narrative_potential`: A short note on how it fits into a book (e.g., "Use as an example in the 'Overcoming Resistance' chapter").
+  - `example_type`: "success_story", "lesson_learned", "process_explanation".
+  - `related_ideas`: Links to other extracted items for cross-referencing.
   
   Example JSON structure per fact:
   ```json
   {
-    "quote": "Original text",
+    "one_liner": "Tesla's Agile reduces cycle time by 50%.",
+    "quote": "Original 2-4 sentence passage",
     "speaker": "If available",
     "timestamp": "HH:MM:SS",
     "source_file": "filename.txt",
     "context": "Surrounding sentences",
     "tags": ["agile", "innovation", "tesla"],
+    "key_metrics": ["reduced cycle time by 50%"],
+    "themes": ["leadership", "scaling Agile"],
+    "narrative_potential": "Use as an example in the 'Overcoming Resistance' chapter",
+    "example_type": "success_story",
+    "related_ideas": ["uuid1", "uuid2"]
   }
   ```
-  Additionally, capture full quotes with timestamps, maintain speaker identification, include surrounding context, add video timestamps for reference, include source file and line numbers, track fact frequency across sources, automatically tag with work environment aspects, Agile principles, identify key metrics or data points, capture emotional tone and emphasis, and find related facts during extraction or merging phases.
+  Additionally, capture full quotes with timestamps, maintain speaker identification, include surrounding context, add video timestamps for reference, include source file and line numbers, track fact frequency across sources, automatically tag with work environment aspects, Agile principles, identify key metrics or data points, and find related facts during extraction or merging phases.
 
 ### 2.3 Fact Merging
 - **Anchor-Based Classification**: Treat each extracted fact as an "anchor." For each anchor:
   - Provide the anchor to the LLM along with the current global list of merged facts, each identified by a unique ID.
   - Prompt the LLM to decide whether to create a new fact (if no exact match), merge into one or more existing facts, or both (create new and merge into existing ones).
+  - Additionally, identify thematic threads, contradictions, and evolution across multiple transcripts during merging.
   - The LLM output should only reference existing facts by their ID, without modifying the original fact text.
   - When merging, the code will insert the anchor fact as-is into the target merged fact, preserving the standalone nature of each fact while allowing readers to judge relatedness independently.
-  - Prompt example: "Given this anchor fact: '[anchor]'. And this list of existing facts: [{'id': '1', 'description': '...'}, ...]. Classify: Create a new fact, merge into existing facts, or both. Output in JSON with IDs."
+  - Prompt example: "Given this anchor fact: '[anchor]'. And this list of existing facts: [{'id': '1', 'description': '...'}, ...]. Classify: Create a new fact, merge into existing facts, or both. Also, identify any thematic connections, contradictions, or evolutionary patterns with existing facts. Output in JSON with IDs and synthesis notes."
   - LLM response: Structured output (e.g., {"action": "new", "fact": "..."}, {"action": "merge", "merges": [{"target_id": "1"}]}, or {"action": "both", "new_fact": "...", "merges": [{"target_id": "1"}]}).
   - The LLM should not itself generate UUIDs.
 - **Process Flow**:
@@ -107,10 +120,10 @@ The system must:
 
 ## 5. Implementation Notes
 - **LLM Selection**: Default to OpenRouter grok-4-fast:free for speed and cost.
-- **Prompt Engineering**: Refine prompts based on initial tests to ensure single-line facts and accurate merging.
+- **Prompt Engineering**: Refine prompts based on initial tests to ensure 2-4 sentence passages, accurate quoting, and accurate merging.
 - **Testing**: Include sample transcripts and expected outputs. Mock LLM for unit tests.
 - **Cost Monitoring**: Track total tokens used per run.
-- **Edge Cases**: Empty transcripts, no facts, LLM failures, overlapping facts that shouldn't merge.
+- **Edge Cases**: Empty transcripts, no facts, LLM failures, overlapping facts that shouldn't merge, low-quality facts filtered out.
 - **Handling Spec Updates**: Implementations must support versioning for cached data to handle changes in processing logic (e.g., new extraction loops, relevance checks, or merging rules). Include a version identifier (e.g., spec version or hash of key prompts/methods) in cache metadata. When deploying updates, check cache versions; if outdated, re-run affected steps (e.g., relevance validation, fact extraction, merging) for cached transcripts. Provide a command-line flag to force full cache invalidation and reprocessing for major changes. Log version mismatches to track reprocessing needs and ensure the merged facts list remains consistent.
 - **Handling Long Transcripts**: To avoid truncation due to LLM context limits, if a transcript exceeds the model's input limit, split it into overlapping chunks (e.g., 80% overlap) and process each chunk for fact extraction, then deduplicate the extracted facts across chunks.
 - **Architectural decisions**: During the implementation, track architectural decisions in a separate file (e.g., `arch_decisions.md`).
