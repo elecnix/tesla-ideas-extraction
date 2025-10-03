@@ -1,0 +1,19 @@
+[project]
+name = "tesla-ideas-extraction"
+version = "0.1.0"
+description = "Extract and merge facts from Tesla-related transcripts"
+authors = [{name = "Nicolas"}]
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.0.0",
+    "tenacity",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest",
+]
