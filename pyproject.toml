@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "tesla-ideas-system"
+version = "0.1.0"
+description = "Tesla Ideas Extraction and Merging System"
+requires-python = ">=3.9"
+dependencies = [
+    "openai>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "asyncio",
+    "aiofiles>=0.23.0",
+    "loguru>=0.7.3",
+    "pydantic>=2.11.9",
+    "orjson>=3.11.3",
+]
+
+[project.scripts]
+tesla-ideas = "main:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["."]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0.0",
+]
