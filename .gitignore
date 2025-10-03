@@ -1,1 +1,6 @@
 .env
+__pycache__/
+cache/
+ideas/
+merged_ideas.json
+merged_ideas.md
