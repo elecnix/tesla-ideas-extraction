@@ -5,7 +5,7 @@ This system processes text transcripts of podcasts/videos about Tesla operations
 
 The system must:
 - Handle irrelevant transcripts (skip if not Tesla-related).
-- Use an LLM (e.g., https://openrouter.ai/x-ai/grok-4-fast:free) sparingly for idea extraction and merging.
+- Use an LLM (e.g., https://openrouter.ai/x-ai/grok-4-fast:free) sparingly for relevance checking, idea extraction and merging.
 - Process transcripts in parallel to improve efficiency.
 - Avoid reprocessing transcripts unnecessarily (e.g., via caching or state tracking).
 - Handle incremental updates by receiving more transcripts and updating the merged ideas list.
@@ -16,7 +16,7 @@ The system must:
 **Assumptions**:
 - Transcripts are plain text files or JSON in specified directories. Multiple directories are allowed.
 - LLM API keys are provided via environment variables (e.g., `OPENROUTER_API_KEY`) in .env file.
-- Total LLM calls should be minimized (e.g., <=1 call per transcript for extraction, and batch merging to reduce invocations).
+- Total LLM calls should be minimized (e.g., 1 call per transcript for relevance check, variable calls for extraction loop, and batch merging to reduce invocations).
 - LLM should be used in structured output mode (e.g., JSON) to ensure consistent and reliable output.
 
 ## 2. Functional Requirements
@@ -24,6 +24,11 @@ The system must:
 ### 2.1 Transcript Input and Filtering
 - **Input**: A directory path containing transcript files (e.g., `.txt` files).
 - **Filtering**: For each transcript, use a lightweight heuristic (e.g., keyword check: "Tesla", "Elon Musk", "Agile", "Innovation") to skip irrelevant ones. If skipped, log and move to the next.
+- **LLM-Based Relevance Check**: For transcripts that pass the heuristic filter, send the full transcript to the LLM with a prompt to confirm relevance to Tesla operations (Agile, innovation speed, etc.).
+  - Prompt example: "Is this transcript primarily about Agile at Tesla or Speed of Innovation at Tesla? Respond with 'yes' or 'no'. If 'no', provide a brief reason."
+  - LLM response: Structured output (e.g., {"relevant": true/false, "reason": "..."}).
+  - If not relevant, skip the transcript and log the reason.
+  - This step can benefit from prompt caching when the same transcript is used in subsequent LLM calls for idea extraction.
 - **Output**: List of valid transcript files to process.
 
 ### 2.2 Idea Extraction (Per Transcript)
