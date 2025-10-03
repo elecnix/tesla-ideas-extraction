@@ -101,7 +101,7 @@ class IdeaExtractor:
                         "ALREADY EXTRACTED QUOTES (do not repeat these):\n" + current_quotes_text + "\n\n"
                         "Find NEW quotes not in the list above. Each quote must be a complete, standalone excerpt that makes sense on its own, without referencing other quotes or the transcript context.\n\n"
                         "Return ONLY a JSON object:\n"
-                        '{"quotes": [{"quote": "full original quote text", "context": "brief surrounding context", "speaker": "speaker name or null", "timestamp": "HH:MM:SS or null", "line_number": 123, "tags": ["tag1", "tag2"]}]}'
+                        '{"quotes": [{"quote": "full original quote text", "context": "brief surrounding context", "speaker": "speaker name or null", "timestamp": "HH:MM:SS from video or null if unknown", "line_number": 123, "tags": ["tag1", "tag2"]}]}'
                         "\n\nTranscript:\n" + content
                     )
                     
@@ -147,10 +147,16 @@ class IdeaExtractor:
                                     
                                     # Parse timestamp safely (should be HH:MM:SS format)
                                     timestamp = item.get('timestamp')
-                                    if timestamp and not isinstance(timestamp, str):
-                                        timestamp = None
-                                    elif timestamp and not (isinstance(timestamp, str) and len(timestamp.split(':')) == 3):
-                                        # If not in HH:MM:SS format, set to None
+                                    if timestamp and isinstance(timestamp, str):
+                                        # Check if it's valid HH:MM:SS format
+                                        parts = timestamp.split(':')
+                                        if len(parts) == 3 and all(part.isdigit() for part in parts):
+                                            # Valid HH:MM:SS format
+                                            pass
+                                        else:
+                                            # Invalid format, set to None
+                                            timestamp = None
+                                    else:
                                         timestamp = None
                                     
                                     # Parse tags safely
@@ -305,14 +311,32 @@ class IdeaExtractor:
         for extracted in extraction_result.ideas:
             # Try to find matching segment for metadata
             segment = None
-            if extracted.line_number:
-                segment = segment_lookup.get(extracted.line_number)
+            if extracted.line_number and extracted.line_number in segment_lookup:
+                segment = segment_lookup[extracted.line_number]
+            
+            # If no line number match, try text-based matching with fuzzy logic
             if not segment and extracted.quote:
-                # Fallback to text matching
+                best_match = None
+                best_score = 0
+                quote_lower = extracted.quote.lower()
+                
                 for seg in segments:
-                    if extracted.quote in seg.text or seg.text in extracted.quote:
-                        segment = seg
-                        break
+                    seg_text_lower = seg.text.lower()
+                    # Calculate match score based on overlap
+                    if quote_lower in seg_text_lower:
+                        score = len(quote_lower) / len(seg_text_lower)
+                        if score > best_score:
+                            best_score = score
+                            best_match = seg
+                    elif seg_text_lower in quote_lower:
+                        score = len(seg_text_lower) / len(quote_lower)
+                        if score > best_score:
+                            best_score = score
+                            best_match = seg
+                
+                # Only use the match if it's reasonably good (more than 50% overlap)
+                if best_match and best_score > 0.5:
+                    segment = best_match
             
             # Convert timestamp from seconds to HH:MM:SS
             timestamp = extracted.timestamp
