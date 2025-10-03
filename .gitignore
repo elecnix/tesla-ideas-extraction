@@ -1,1 +1,12 @@
 .env
+node_modules/
+dist/
+*.log
+cache/
+cache/**
+!cache/.gitkeep
+outputs/
+outputs/**
+.DS_Store
+*.tsbuildinfo
+
