@@ -28,14 +28,18 @@ The system must:
 
 ### 2.2 Idea Extraction (Per Transcript)
 - **Process**: For each valid transcript, analyze it in isolation.
-  - Send the full transcript to the LLM with a prompt to extract ideas related to Tesla operations (Agile, innovation speed, etc.).
-  - Prompt example: "Extract all unique ideas from this transcript about Agile at Tesla or Speed of Innovation at Tesla. Describe each idea in a single line. Ignore unrelated content."
-  - LLM response: Structured output (e.g., JSON array of strings, one per idea).
+  - Initialize an empty list of extracted ideas.
+  - In a loop:
+    - Send the full transcript to the LLM along with the current list of extracted ideas, prompting to identify any missing ideas related to Tesla operations (Agile, innovation speed, etc.).
+    - Prompt example: "Given this transcript: '[transcript]'. And this current list of ideas: [list]. Extract any additional unique ideas not already in the list about Agile at Tesla or Speed of Innovation at Tesla. Describe each idea in a single line. If no additional ideas can be identified, return an empty list."
+    - LLM response: Structured output (e.g., JSON array of strings, one per new idea).
+    - Add the new ideas to the list.
+    - Repeat the loop until the number of new ideas added in the last iteration is 1 or fewer, or the total number of extracted ideas reaches at least 15.
+  - After the loop, assign each idea a UUID and store additional details like contextual details, line number, and timestamp if available.
 - **Parallelism**: Process multiple transcripts concurrently using asyncio or ThreadPoolExecutor to handle I/O-bound LLM calls. The global list of ideas should be shared and updated in real-time.
 - **Cost Efficiency**: Cache extracted ideas per transcript (e.g., in a JSON file) to avoid reprocessing if the script restarts. Use a hash of the transcript content as a cache key.
 - **Resilience**: Implement retry logic for LLM calls (e.g., infinite retries with exponential backoff). The script should be restartable and continue from where it left off.
-- **Output**: For each transcript, a list of unique ideas (short descriptions) with contextual details, line number, and timestamp if available. The list should be stored in a JSON file.
-- Each idea should be given a UUID.
+- **Output**: For each transcript, the final list of unique ideas (short descriptions) with UUIDs and contextual details. The list should be stored in a JSON file.
 
 ### 2.3 Idea Merging
 - **Anchor-Based Classification**: Treat each extracted idea as an "anchor." For each anchor:
