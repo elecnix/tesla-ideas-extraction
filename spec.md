@@ -1,7 +1,7 @@
 # Software Requirements Specification (SRS): Tesla Ideas Extraction and Merging System
 
 ## 1. Overview
-This system processes text transcripts of podcasts/videos about Tesla operations (e.g., Agile at Tesla, Speed of Innovation). It extracts ideas from each transcript independently, then merges them into a unified list of distinctive ideas. Merging identifies related ideas to group them under core "anchors" while adding supplementary "color" (e.g., nuances or references) without losing uniqueness.
+This system processes text transcripts of podcasts/videos about Tesla operations (e.g., Agile at Tesla, Speed of Innovation). It extracts ideas from each transcript independently, then merges them into a unified list of distinctive ideas. Merging identifies related ideas and links them while keeping each idea standalone for readers to judge relatedness themselves. The original idea is merged as-is, with the merger LLM referencing ideas by ID, and the merging code inserting the idea into the merged anchor idea.
 
 The system must:
 - Handle irrelevant transcripts (skip if not Tesla-related).
@@ -48,18 +48,19 @@ The system must:
 
 ### 2.3 Idea Merging
 - **Anchor-Based Classification**: Treat each extracted idea as an "anchor." For each anchor:
-  - Provide the anchor to the LLM along with the current global list of merged ideas.
-  - Prompt the LLM to decide whether to create a new idea (if no exact match), add color to one or more existing ideas, or both (create new and add color to existing ones).
-  - When contributing to an idea, add the source of the anchor idea (e.g., transcript name, hash of the transcript content, idea UUID and timestamp).
-  - Prompt example: "Given this anchor idea: '[anchor]'. And this list of existing ideas: [list]. Classify: Create a new idea, add color to existing ideas, or both. Output in JSON."
-  - LLM response: Structured output (e.g., {"action": "new", "idea": "..."}, {"action": "merge", "merges": [{"target": 0, "color": "..."}]}, or {"action": "both", "new_idea": "...", "merges": [{"target": 0, "color": "..."}]}).
+  - Provide the anchor to the LLM along with the current global list of merged ideas, each identified by a unique ID.
+  - Prompt the LLM to decide whether to create a new idea (if no exact match), merge into one or more existing ideas, or both (create new and merge into existing ones).
+  - The LLM output should only reference existing ideas by their ID, without modifying the original idea text.
+  - When merging, the code will insert the anchor idea as-is into the target merged idea, preserving the standalone nature of each idea while allowing readers to judge relatedness independently.
+  - Prompt example: "Given this anchor idea: '[anchor]'. And this list of existing ideas: [{'id': '1', 'description': '...'}, ...]. Classify: Create a new idea, merge into existing ideas, or both. Output in JSON with IDs."
+  - LLM response: Structured output (e.g., {"action": "new", "idea": "..."}, {"action": "merge", "merges": [{"target_id": "1"}]}, or {"action": "both", "new_idea": "...", "merges": [{"target_id": "1"}]}).
   - The LLM should not itself generate UUIDs.
 - **Process Flow**:
   - Start with an empty global list.
   - Iterate through all extracted ideas (from all transcripts).
   - For each anchor, invoke LLM to classify against the current global list.
-  - Update the global list: Add new ideas or append color/details to existing ones.
-- **Merging Logic**: If merging, append the anchor's details as references. Retain each contribution as a distinct reference entry.
+  - Update the global list: Add new ideas or merge anchors into existing ones by inserting the anchor idea into the target idea's structure.
+- **Merging Logic**: If merging, insert the full anchor idea (description, UUID, contextual details) as a sub-element or reference in the target idea, allowing each idea to remain standalone while linked.
 - **Parallelism**: Batch anchors into groups (e.g., 10-20 per LLM call) to reduce invocations. Use async for concurrent LLM calls if API supports it. All operations of the pipeline should be parallelized, meaning they can all run massively in parallel: loading transcripts, extracting ideas, and merging. Merging too should be parallelized, and we accept that two identical ideas might be created concurrently.
 
 ### 2.4 Output and Logging
