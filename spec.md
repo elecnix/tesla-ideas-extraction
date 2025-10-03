@@ -14,7 +14,7 @@ The system must:
 - Output one Markdown file per idea, with each idea's details, color, and references.
 
 **Assumptions**:
-- Transcripts are plain text files or JSON in specified directories. Multiple directories are allowed.
+- Transcripts are plain text (.txt), JSON (.json), or SRT (.srt) files in specified directories. Multiple directories are allowed. If multiple files share the same basename, prefer those with timestamps.
 - LLM API keys are provided via environment variables (e.g., `OPENROUTER_API_KEY`) in .env file.
 - Total LLM calls should be minimized (e.g., 1 call per transcript for relevance check, variable calls for extraction loop, and batch merging to reduce invocations).
 - LLM should be used in structured output mode (e.g., JSON) to ensure consistent and reliable output.
@@ -22,7 +22,7 @@ The system must:
 ## 2. Functional Requirements
 
 ### 2.1 Transcript Input and Filtering
-- **Input**: A directory path containing transcript files (e.g., `.txt` files).
+- **Input**: A directory path containing transcript files (e.g., `.txt`, `.json`, or `.srt` files).
 - **Filtering**: For each transcript, use a lightweight heuristic (e.g., keyword check: "Tesla", "Elon Musk", "Agile", "Innovation") to skip irrelevant ones. If skipped, log and move to the next.
 - **LLM-Based Relevance Check**: For transcripts that pass the heuristic filter, send the full transcript to the LLM with a prompt to confirm relevance to Tesla operations (Agile, innovation speed, etc.).
   - Prompt example: "Is this transcript primarily about Agile at Tesla or Speed of Innovation at Tesla? Respond with 'yes' or 'no'. If 'no', provide a brief reason."
