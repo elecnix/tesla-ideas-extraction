@@ -94,6 +94,7 @@ The system must:
 - **Testing**: Include sample transcripts and expected outputs. Mock LLM for unit tests.
 - **Cost Monitoring**: Track total tokens used per run.
 - **Edge Cases**: Empty transcripts, no ideas, LLM failures, overlapping ideas that shouldn't merge.
+- **Handling Spec Updates**: Implementations must support versioning for cached data to handle changes in processing logic (e.g., new extraction loops, relevance checks, or merging rules). Include a version identifier (e.g., spec version or hash of key prompts/methods) in cache metadata. When deploying updates, check cache versions; if outdated, re-run affected steps (e.g., relevance validation, idea extraction, merging) for cached transcripts. Provide a command-line flag to force full cache invalidation and reprocessing for major changes. Log version mismatches to track reprocessing needs and ensure the merged ideas list remains consistent.
 - **Architectural decisions**: During the implementation, track architectural decisions in a separate file (e.g., `arch_decisions.md`).
 
 This spec provides a complete blueprint. Review it, and let me know any changes before implementation. If needed, I can start coding based on this once approved.
