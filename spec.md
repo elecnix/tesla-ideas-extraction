@@ -44,7 +44,26 @@ The system must:
 - **Parallelism**: Process multiple transcripts concurrently using asyncio or ThreadPoolExecutor to handle I/O-bound LLM calls. The global list of ideas should be shared and updated in real-time.
 - **Cost Efficiency**: Cache extracted ideas per transcript (e.g., in a JSON file) to avoid reprocessing if the script restarts. Use a hash of the transcript content as a cache key.
 - **Resilience**: Implement retry logic for LLM calls (e.g., infinite retries with exponential backoff). The script should be restartable and continue from where it left off.
-- **Output**: For each transcript, the final list of unique ideas (short descriptions) with UUIDs and contextual details. The list should be stored in a JSON file.
+- **Output**: For each transcript, the final list of unique ideas with UUIDs and detailed contextual information. Each idea should be stored in a structured JSON format to support book writing and raw material extraction, including the following fields:
+  - `quote`: The original text of the idea.
+  - `speaker`: Speaker identification if available.
+  - `timestamp`: Video or transcript timestamp (e.g., "HH:MM:SS").
+  - `source_file`: Name of the source file.
+  - `context`: Surrounding sentences before and after the quote.
+  - `tags`: Automatically generated tags related to Agile principles, innovation, etc.
+  
+  Example JSON structure per idea:
+  ```json
+  {
+    "quote": "Original text",
+    "speaker": "If available",
+    "timestamp": "HH:MM:SS",
+    "source_file": "filename.txt",
+    "context": "Surrounding sentences",
+    "tags": ["agile", "innovation", "tesla"],
+  }
+  ```
+  Additionally, capture full quotes with timestamps, maintain speaker identification, include surrounding context, add video timestamps for reference, include source file and line numbers, track idea frequency across sources, automatically tag with Agile principles, identify key metrics or data points, capture emotional tone and emphasis, and find related ideas during extraction or merging phases.
 
 ### 2.3 Idea Merging
 - **Anchor-Based Classification**: Treat each extracted idea as an "anchor." For each anchor:
@@ -95,6 +114,7 @@ The system must:
 - **Cost Monitoring**: Track total tokens used per run.
 - **Edge Cases**: Empty transcripts, no ideas, LLM failures, overlapping ideas that shouldn't merge.
 - **Handling Spec Updates**: Implementations must support versioning for cached data to handle changes in processing logic (e.g., new extraction loops, relevance checks, or merging rules). Include a version identifier (e.g., spec version or hash of key prompts/methods) in cache metadata. When deploying updates, check cache versions; if outdated, re-run affected steps (e.g., relevance validation, idea extraction, merging) for cached transcripts. Provide a command-line flag to force full cache invalidation and reprocessing for major changes. Log version mismatches to track reprocessing needs and ensure the merged ideas list remains consistent.
+- **Handling Long Transcripts**: To avoid truncation due to LLM context limits, if a transcript exceeds the model's input limit, split it into overlapping chunks (e.g., 80% overlap) and process each chunk for idea extraction, then deduplicate the extracted ideas across chunks.
 - **Architectural decisions**: During the implementation, track architectural decisions in a separate file (e.g., `arch_decisions.md`).
 
 This spec provides a complete blueprint. Review it, and let me know any changes before implementation. If needed, I can start coding based on this once approved.
