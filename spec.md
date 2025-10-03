@@ -1,7 +1,7 @@
 # Software Requirements Specification (SRS): Tesla Ideas Extraction and Merging System
 
 ## 1. Overview
-This system processes text transcripts of podcasts/videos about Tesla operations (e.g., Agile at Tesla, Speed of Innovation). It extracts ideas from each transcript independently, then merges them into a unified list of distinctive ideas. Merging identifies related ideas and links them while keeping each idea standalone for readers to judge relatedness themselves. The original idea is merged as-is, with the merger LLM referencing ideas by ID, and the merging code inserting the idea into the merged anchor idea.
+This system processes text transcripts of podcasts/videos about Tesla operations and work environment (e.g., Agile at Tesla, Speed of Innovation, company culture). It extracts ideas from each transcript independently, then merges them into a unified list of distinctive ideas. Merging identifies related ideas and links them while keeping each idea standalone for readers to judge relatedness themselves. The original idea is merged as-is, with the merger LLM referencing ideas by ID, and the merging code inserting the idea into the merged anchor idea.
 
 The system must:
 - Handle irrelevant transcripts (skip if not Tesla-related).
@@ -18,25 +18,23 @@ The system must:
 - LLM API keys are provided via environment variables (e.g., `OPENROUTER_API_KEY`) in .env file.
 - Total LLM calls should be minimized (e.g., 1 call per transcript for relevance check, variable calls for extraction loop, and batch merging to reduce invocations).
 - LLM should be used in structured output mode (e.g., JSON) to ensure consistent and reliable output.
-
 ## 2. Functional Requirements
 
 ### 2.1 Transcript Input and Filtering
 - **Input**: A directory path containing transcript files (e.g., `.txt`, `.json`, or `.srt` files).
-- **Filtering**: For each transcript, use a lightweight heuristic (e.g., keyword check: "Tesla", "Elon Musk", "Agile", "Innovation") to skip irrelevant ones. If skipped, log and move to the next.
-- **LLM-Based Relevance Check**: For transcripts that pass the heuristic filter, send the full transcript to the LLM with a prompt to confirm relevance to Tesla operations (Agile, innovation speed, etc.).
-  - Prompt example: "Is this transcript primarily about Agile at Tesla or Speed of Innovation at Tesla? Respond with 'yes' or 'no'. If 'no', provide a brief reason."
+- **Filtering**: For each transcript, use a lightweight heuristic (e.g., keyword check: "Tesla", "Elon Musk", "Agile", "Innovation", "work environment", "company culture") to skip irrelevant ones. If skipped, log and move to the next.
+- **LLMBased Relevance Check**: For transcripts that pass the heuristic filter, send the full transcript to the LLM with a prompt to confirm relevance to Tesla operations and work environment (Agile, innovation speed, etc.).
+  - Prompt example: "Is this transcript primarily about Tesla's work environment, including Agile at Tesla or Speed of Innovation at Tesla? Respond with 'yes' or 'no'. If 'no', provide a brief reason."
   - LLM response: Structured output (e.g., {"relevant": true/false, "reason": "..."}).
   - If not relevant, skip the transcript and log the reason.
   - This step can benefit from prompt caching when the same transcript is used in subsequent LLM calls for idea extraction.
 - **Output**: List of valid transcript files to process.
-
 ### 2.2 Idea Extraction (Per Transcript)
 - **Process**: For each valid transcript, analyze it in isolation.
   - Initialize an empty list of extracted ideas.
   - In a loop:
-    - Send the full transcript to the LLM along with the current list of extracted ideas, prompting to identify any missing ideas related to Tesla operations (Agile, innovation speed, etc.).
-    - Prompt example: "Given this transcript: '[transcript]'. And this current list of ideas: [list]. Extract any additional unique ideas not already in the list about Agile at Tesla or Speed of Innovation at Tesla. Describe each idea in a single line. If no additional ideas can be identified, return an empty list."
+    - Send the full transcript to the LLM along with the current list of extracted ideas, prompting to identify any missing ideas related to Tesla operations and work environment (Agile, innovation speed, etc.).
+    - Prompt example: "Given this transcript: '[transcript]'. And this current list of ideas: [list]. Extract any additional unique ideas not already in the list about Tesla's work environment, including Agile at Tesla or Speed of Innovation at Tesla. Describe each idea in a single line. If no additional ideas can be identified, return an empty list."
     - LLM response: Structured output (e.g., JSON array of strings, one per new idea).
     - Add the new ideas to the list.
     - Repeat the loop until the number of new ideas added in the last iteration is 1 or fewer, or the total number of extracted ideas reaches at least 15.
@@ -50,7 +48,7 @@ The system must:
   - `timestamp`: Video or transcript timestamp (e.g., "HH:MM:SS").
   - `source_file`: Name of the source file.
   - `context`: Surrounding sentences before and after the quote.
-  - `tags`: Automatically generated tags related to Agile principles, innovation, etc.
+  - `tags`: Automatically generated tags related to work environment, Agile principles, innovation, etc.
   
   Example JSON structure per idea:
   ```json
@@ -63,7 +61,7 @@ The system must:
     "tags": ["agile", "innovation", "tesla"],
   }
   ```
-  Additionally, capture full quotes with timestamps, maintain speaker identification, include surrounding context, add video timestamps for reference, include source file and line numbers, track idea frequency across sources, automatically tag with Agile principles, identify key metrics or data points, capture emotional tone and emphasis, and find related ideas during extraction or merging phases.
+  Additionally, capture full quotes with timestamps, maintain speaker identification, include surrounding context, add video timestamps for reference, include source file and line numbers, track idea frequency across sources, automatically tag with work environment aspects, Agile principles, identify key metrics or data points, capture emotional tone and emphasis, and find related ideas during extraction or merging phases.
 
 ### 2.3 Idea Merging
 - **Anchor-Based Classification**: Treat each extracted idea as an "anchor." For each anchor:
