@@ -45,7 +45,7 @@ The system must:
 - **Output**: For each transcript, the final list of unique ideas with UUIDs and detailed contextual information. Each idea should be stored in a structured JSON format to support book writing and raw material extraction, including the following fields:
   - `quote`: The original text of the idea.
   - `speaker`: Speaker identification if available.
-  - `timestamp`: Video or transcript timestamp (e.g., "HH:MM:SS").
+  - `timestamp`: Timestamp from subtitles or transcription sources (e.g., "HH:MM:SS"), not the current processing time.
   - `source_file`: Name of the source file.
   - `context`: Surrounding sentences before and after the quote.
   - `tags`: Automatically generated tags related to work environment, Agile principles, innovation, etc.
