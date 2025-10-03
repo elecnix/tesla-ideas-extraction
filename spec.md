@@ -88,7 +88,7 @@ The system must:
 - **Dependencies**: `openai` for LLM, `asyncio` for parallelism, `hashlib` for caching.
 
 ## 5. Implementation Notes
-- **LLM Selection**: Default to GPT-4 for quality, but allow config for cheaper models (e.g., GPT-3.5).
+- **LLM Selection**: Default to OpenRouter grok-4-fast:free for speed and cost.
 - **Prompt Engineering**: Refine prompts based on initial tests to ensure single-line ideas and accurate merging.
 - **Testing**: Include sample transcripts and expected outputs. Mock LLM for unit tests.
 - **Cost Monitoring**: Track total tokens used per run.
